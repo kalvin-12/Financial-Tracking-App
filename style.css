@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root { 
+    --primary: #2563eb; 
+}
+
+.dark { 
+    background-color: #0f172a; 
+    color: #f8fafc; 
+}
+
+.dark .card { 
+    background-color: #1e293b; 
+    border-color: #334155; 
+    color: #f8fafc; 
+}
+
+.dark .bg-slate-50 { background-color: #334155; }
+.dark .bg-slate-100 { background-color: #1e293b; }
+.dark .border-slate-100 { border-color: #334155; }
+.dark .text-slate-500 { color: #94a3b8; }
+.dark .text-slate-700 { color: #cbd5e1; }
+.dark .text-slate-800 { color: #f8fafc; }
+.dark input, .dark select { 
+    background-color: #334155; 
+    border-color: #475569; 
+    color: #f8fafc; 
+}
+.dark .modal-backdrop { background-color: rgba(0, 0, 0, 0.8); }
+
+body { 
+    font-family: 'Inter', sans-serif; 
+    background-color: #f8fafc; 
+    transition: background-color 0.3s, color 0.3s; 
+}
+
+.card { 
+    background: white; 
+    border-radius: 1rem; 
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); 
+    transition: transform 0.2s; 
+}
+
+.transition-all { transition: all 0.3s ease; }
+
+[v-cloak] { display: none; }
+
+.modal-backdrop { 
+    background-color: rgba(0, 0, 0, 0.5); 
+    backdrop-filter: blur(4px); 
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { 
+    background: #cbd5e1; 
+    border-radius: 10px; 
+}
+
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+#scroll-top { 
+    opacity: 0; 
+    visibility: hidden; 
+    transition: all 0.3s; 
+}
+
+#scroll-top.show { 
+    opacity: 1; 
+    visibility: visible; 
+}

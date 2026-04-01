@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinTrack - Financial Management Tool</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (Excel) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <!-- jsPDF (PDF) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- External Styles -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- PWA & Favicon -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <!-- Favicon browser tab -->
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png">
+    <link rel="shortcut icon" href="icons/icon-32x32.png" type="image/x-icon">
+    <!-- PWA icons -->
+    <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512x512.png">
+    <!-- Android / mobile meta -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="FinTrack">
+    <meta name="application-name" content="FinTrack">
+    <meta name="description" content="Aplikasi manajemen keuangan pribadi yang mudah dan aman.">
+</head>
+<body class="min-h-screen text-slate-800">
+    <!-- Loading State -->
+    <div id="loader" class="fixed inset-0 z-[100] flex items-center justify-center bg-white transition-opacity duration-500">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+    </div>
+
+    <nav class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-40 transition-colors">
+        <div class="container mx-auto flex justify-between items-center px-4">
+            <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
+                <i class="fas fa-wallet"></i> FinTrack
+            </h1>
+            <div class="flex items-center gap-4 text-sm font-medium">
+                <a href="#dashboard" class="hover:text-blue-100 hidden sm:block">Dashboard</a>
+                <a href="#transaksi" class="hover:text-blue-100 hidden sm:block">Transaksi</a>
+                
+                <!-- Dark Mode Toggle -->
+                <button id="dark-mode-toggle" class="p-2 hover:bg-blue-700 rounded-full transition-colors" title="Toggle Tema">
+                    <i class="fas fa-moon"></i>
+                </button>
+
+                <!-- PWA Install -->
+                <button id="install-pwa" class="hidden bg-white text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-50 transition-all">
+                    Install App
+                </button>
+
+                <div class="md:hidden">
+                    <i class="fas fa-bars cursor-pointer" id="mobile-menu-btn"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
+        <!-- Dashboard Summary -->
+        <section id="dashboard" class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            <div class="card p-6 border-l-4 border-green-500 hover:scale-[1.02] transition-all">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total Pemasukan</p>
+                        <h3 id="total-income" class="text-xl md:text-2xl font-bold text-green-600">Rp 0</h3>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-full">
+                        <i class="fas fa-arrow-up text-green-500"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card p-6 border-l-4 border-red-500 hover:scale-[1.02] transition-all">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total Pengeluaran</p>
+                        <h3 id="total-expense" class="text-xl md:text-2xl font-bold text-red-600">Rp 0</h3>
+                    </div>
+                    <div class="bg-red-50 p-3 rounded-full">
+                        <i class="fas fa-arrow-down text-red-500"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card p-6 border-l-4 border-blue-500 hover:scale-[1.02] transition-all">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Saldo Bersih</p>
+                        <h3 id="total-balance" class="text-xl md:text-2xl font-bold text-blue-600">Rp 0</h3>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-full">
+                        <i class="fas fa-scale-balanced text-blue-500"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Workspace -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
+            <!-- Left Panel: Form & Budget -->
+            <div class="lg:col-span-4 space-y-6">
+                <!-- Transaction Form -->
+                <section id="transaksi" class="card p-6 sticky top-24">
+                    <div class="flex justify-between items-center mb-5">
+                        <h2 id="form-title" class="text-lg font-bold flex items-center gap-2 text-slate-800">
+                            <i class="fas fa-plus-circle text-blue-500"></i> Tambah Transaksi
+                        </h2>
+                        <button id="delete-all-btn" class="text-red-400 hover:text-red-600 transition-colors" title="Hapus Semua Data">
+                            <i class="fas fa-trash-can"></i>
+                        </button>
+                    </div>
+                    <form id="transaction-form" class="space-y-4">
+                        <input type="hidden" id="edit-id">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Keterangan</label>
+                            <input type="text" id="desc" placeholder="Gaji, Makan, Belanja..." 
+                                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all">
+                            <p id="desc-error" class="text-red-500 text-xs mt-1 hidden">Keterangan tidak boleh kosong</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">Jumlah (Rp)</label>
+                                <input type="number" id="amount" min="1" placeholder="0" 
+                                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all">
+                                <p id="amount-error" class="text-red-500 text-xs mt-1 hidden">Harus lebih dari 0</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">Tanggal</label>
+                                <input type="date" id="date" 
+                                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm">
+                                <p id="date-error" class="text-red-500 text-xs mt-1 hidden">Wajib diisi</p>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Kategori</label>
+                            <div class="flex gap-2">
+                                <select id="category" class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none appearance-none">
+                                    <option value="Gaji">Gaji</option>
+                                    <option value="Makanan">Makanan</option>
+                                    <option value="Transportasi">Transportasi</option>
+                                    <option value="Belanja">Belanja</option>
+                                    <option value="Kesehatan">Kesehatan</option>
+                                    <option value="Pendidikan">Pendidikan</option>
+                                    <option value="Hiburan">Hiburan</option>
+                                    <option value="Lainnya">Lainnya</option>
+                                </select>
+                                <button type="button" id="set-budget-btn" class="p-2.5 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-xl transition-colors" title="Set Anggaran">
+                                    <i class="fas fa-bullseye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex p-1 bg-slate-100 rounded-xl">
+                            <label class="flex-1 text-center cursor-pointer">
+                                <input type="radio" name="type" value="income" checked class="hidden peer">
+                                <div class="py-2 rounded-lg peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm text-slate-500 font-medium text-sm transition-all">
+                                    Pemasukan
+                                </div>
+                            </label>
+                            <label class="flex-1 text-center cursor-pointer">
+                                <input type="radio" name="type" value="expense" class="hidden peer">
+                                <div class="py-2 rounded-lg peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-sm text-slate-500 font-medium text-sm transition-all">
+                                    Pengeluaran
+                                </div>
+                            </label>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2 px-2">
+                                <input type="checkbox" id="recurring" class="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500">
+                                <label for="recurring" class="text-sm font-medium text-slate-600 flex items-center gap-1">
+                                    Transaksi Berulang <i class="fas fa-circle-info text-slate-400 text-[10px]" title="Akan otomatis ditambahkan setiap periode baru"></i>
+                                </label>
+                            </div>
+                            <div id="recurring-options" class="hidden pl-6">
+                                <select id="recurring-period" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none">
+                                    <option value="weekly">Mingguan</option>
+                                    <option value="monthly" selected>Bulanan</option>
+                                    <option value="yearly">Tahunan</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <button type="submit" id="submit-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-blue-200 flex items-center justify-center gap-2">
+                                <i class="fas fa-save"></i> <span>Simpan</span>
+                            </button>
+                            <button type="button" id="cancel-edit" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-4 rounded-xl transition-colors">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- Top Expenses Card -->
+                <section class="card p-5">
+                    <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2 mb-4">
+                        <i class="fas fa-fire text-orange-500"></i> Pengeluaran Terbesar
+                    </h3>
+                    <div id="top-expenses-list" class="space-y-3">
+                        <!-- Top items -->
+                    </div>
+                </section>
+
+                <!-- Budget Alert Section -->
+                <section id="budget-section" class="card p-5 border-t-4 border-amber-400 hidden">
+                    <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2 mb-3">
+                        <i class="fas fa-triangle-exclamation text-amber-500"></i> Peringatan Anggaran
+                    </h3>
+                    <div id="budget-alerts" class="space-y-3">
+                        <!-- Budget warnings go here -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Panel: Charts & Table -->
+            <div class="lg:col-span-8 space-y-6">
+                <!-- Charts Section -->
+                <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="card p-6">
+                        <h2 class="text-md font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <i class="fas fa-chart-pie text-blue-500"></i> Kategori Pengeluaran
+                        </h2>
+                        <div class="h-64 relative">
+                            <canvas id="categoryChart"></canvas>
+                            <div id="no-category-data" class="absolute inset-0 flex items-center justify-center text-slate-400 italic text-sm hidden">
+                                Belum ada data pengeluaran
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card p-6">
+                        <h2 class="text-md font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <i class="fas fa-chart-line text-blue-500"></i> Tren Saldo (30 Hari Terakhir)
+                        </h2>
+                        <div class="h-64">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Transaction History -->
+                <section class="card overflow-hidden">
+                    <div class="p-5 md:p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-history text-blue-500"></i> Riwayat Transaksi
+                        </h2>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="relative">
+                                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                <input type="text" id="search-input" placeholder="Cari..." 
+                                    class="pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-40">
+                            </div>
+                            <select id="filter-category" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none">
+                                <option value="all">Semua Kategori</option>
+                            </select>
+                            <select id="filter-type" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none">
+                                <option value="all">Semua Tipe</option>
+                                <option value="income">Pemasukan</option>
+                                <option value="expense">Pengeluaran</option>
+                            </select>
+                            <div class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2">
+                                <input type="date" id="filter-start-date" class="bg-transparent text-[10px] outline-none py-1">
+                                <span class="text-slate-400">-</span>
+                                <input type="date" id="filter-end-date" class="bg-transparent text-[10px] outline-none py-1">
+                            </div>
+                            <select id="filter-preset" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none">
+                                <option value="all">Semua Waktu</option>
+                                <option value="this-week">Minggu Ini</option>
+                                <option value="this-month">Bulan Ini</option>
+                                <option value="last-30-days">30 Hari Terakhir</option>
+                            </select>
+                            <div class="flex gap-1">
+                                <button id="import-excel-btn" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors" title="Impor Excel/CSV">
+                                    <i class="fas fa-file-import"></i>
+                                </button>
+                                <input type="file" id="import-file" class="hidden" accept=".xlsx, .xls, .csv">
+                                <button id="export-excel" class="p-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors" title="Export Excel">
+                                    <i class="fas fa-file-excel"></i>
+                                </button>
+                                <button id="export-pdf" class="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors" title="Export PDF">
+                                    <i class="fas fa-file-pdf"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100">
+                                <tr>
+                                    <th class="px-6 py-4 cursor-pointer hover:bg-slate-100 transition-colors" id="sort-date">
+                                        Tanggal <i class="fas fa-sort ml-1"></i>
+                                    </th>
+                                    <th class="px-6 py-4">Keterangan</th>
+                                    <th class="px-6 py-4">Kategori</th>
+                                    <th class="px-6 py-4">Jumlah</th>
+                                    <th class="px-6 py-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transaction-list" class="divide-y divide-slate-100">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div id="pagination" class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-500">
+                        <span id="pagination-info">Menampilkan 1-10 dari 50</span>
+                        <div class="flex gap-2">
+                            <button id="prev-page" class="px-3 py-1 bg-white border border-slate-200 rounded-md hover:bg-slate-50 disabled:opacity-50">Prev</button>
+                            <button id="next-page" class="px-3 py-1 bg-white border border-slate-200 rounded-md hover:bg-slate-50 disabled:opacity-50">Next</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <!-- Custom Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="modal-backdrop absolute inset-0"></div>
+        <div class="card relative w-full max-w-sm m-4 p-6 text-center animate-in fade-in zoom-in duration-200">
+            <div id="confirm-icon" class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-trash-alt text-2xl"></i>
+            </div>
+            <h3 id="confirm-title" class="text-xl font-bold text-slate-800 mb-2">Hapus Transaksi?</h3>
+            <p id="confirm-text" class="text-slate-500 text-sm mb-6">Tindakan ini tidak dapat dibatalkan. Data akan terhapus permanen.</p>
+            <div class="flex gap-3">
+                <button id="confirm-cancel" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all">Batal</button>
+                <button id="confirm-yes" class="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-200 transition-all">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Edit Modal -->
+    <div id="budget-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="modal-backdrop absolute inset-0"></div>
+        <div class="card relative w-full max-w-sm m-4 p-6 animate-in fade-in zoom-in duration-200">
+            <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-bullseye text-amber-500"></i> Set Anggaran
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Kategori</label>
+                    <input type="text" id="budget-cat-display" disabled class="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Anggaran Bulanan (Rp)</label>
+                    <input type="number" id="budget-amount-input" placeholder="0" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button id="budget-cancel" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all">Batal</button>
+                <button id="budget-save" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scroll Top Button -->
+    <button id="scroll-top" class="fixed bottom-8 right-8 w-12 h-12 bg-blue-600 text-white rounded-full shadow-xl hover:bg-blue-700 flex items-center justify-center transition-all z-30">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <footer class="bg-slate-900 text-slate-400 py-10 mt-12 text-center text-sm">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-center gap-6 mb-4">
+                <i class="fab fa-github hover:text-white cursor-pointer transition-colors"></i>
+                <i class="fab fa-twitter hover:text-white cursor-pointer transition-colors"></i>
+                <i class="fab fa-linkedin hover:text-white cursor-pointer transition-colors"></i>
+            </div>
+            <p>&copy; 2024 FinTrack. Dibuat dengan <i class="fas fa-heart text-red-500"></i> untuk manajemen keuangan Anda.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
