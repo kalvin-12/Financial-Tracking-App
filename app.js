@@ -807,7 +807,432 @@ const UIController = {
     }
 };
 
+// ===== PAGE NAVIGATION =====
+const PageManager = {
+    currentPage: 'main',
+
+    showPage(page) {
+        const mainEl = document.querySelector('main');
+        const pageAnggaran = document.getElementById('page-anggaran');
+        const pageLaporan = document.getElementById('page-laporan');
+
+        mainEl.classList.toggle('hidden', page !== 'main');
+        pageAnggaran.classList.toggle('hidden', page !== 'anggaran');
+        pageLaporan.classList.toggle('hidden', page !== 'laporan');
+
+        this.currentPage = page;
+        this.updateNavHighlight();
+
+        if (page === 'anggaran') BudgetPageManager.render();
+        if (page === 'laporan') ReportManager.render();
+    },
+
+    updateNavHighlight() {
+        document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+            const isActive = btn.dataset.tab === this.currentPage;
+            btn.classList.toggle('text-blue-200', isActive);
+            btn.classList.toggle('underline', isActive);
+        });
+    }
+};
+
+// ===== HALAMAN ANGGARAN =====
+const BudgetPageManager = {
+    editingCat: null,
+
+    render() {
+        const currentMonth = new Date().toISOString().substring(0, 7);
+        const monthName = new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+        document.getElementById('budget-month-label').textContent = monthName;
+
+        const budgets = TransactionManager.budgets;
+        const monthlyExpenses = TransactionManager.transactions
+            .filter(t => t.type === 'expense' && t.date.startsWith(currentMonth))
+            .reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) + t.amount; return acc; }, {});
+
+        const allBudgetCats = Object.keys(budgets);
+
+        // Overview numbers
+        const totalBudget = allBudgetCats.reduce((s, c) => s + (budgets[c] || 0), 0);
+        const totalSpent = allBudgetCats.reduce((s, c) => s + (monthlyExpenses[c] || 0), 0);
+        const totalRemaining = totalBudget - totalSpent;
+        const pctUsed = totalBudget > 0 ? Math.round(totalSpent / totalBudget * 100) : 0;
+
+        document.getElementById('bov-total-budget').textContent = UIController.formatCurrency(totalBudget);
+        document.getElementById('bov-total-spent').textContent = UIController.formatCurrency(totalSpent);
+        document.getElementById('bov-total-remaining').textContent = UIController.formatCurrency(totalRemaining);
+        document.getElementById('bov-total-remaining').className = `text-xl font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`;
+        document.getElementById('bov-percent-used').textContent = pctUsed + '%';
+        document.getElementById('bov-percent-used').className = `text-xl font-bold ${pctUsed >= 100 ? 'text-red-600' : pctUsed >= 80 ? 'text-amber-600' : 'text-blue-600'}`;
+        document.getElementById('budget-count-badge').textContent = allBudgetCats.length + ' kategori';
+
+        // Budget list
+        const listEl = document.getElementById('budget-page-list');
+        if (allBudgetCats.length === 0) {
+            listEl.innerHTML = '<div class="p-10 text-center text-slate-400 italic text-sm">Belum ada anggaran. Tambahkan di panel kiri.</div>';
+        } else {
+            listEl.innerHTML = allBudgetCats.sort().map(cat => {
+                const budget = budgets[cat];
+                const spent = monthlyExpenses[cat] || 0;
+                const remaining = budget - spent;
+                const pct = Math.min(Math.round(spent / budget * 100), 100);
+                const isOver = spent > budget;
+                const isWarn = !isOver && pct >= 80;
+                const barColor = isOver ? 'bg-red-500' : isWarn ? 'bg-amber-500' : 'bg-green-500';
+                const statusBadge = isOver
+                    ? '<span class="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Terlampaui</span>'
+                    : isWarn
+                    ? '<span class="text-[10px] font-bold bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full">Hampir habis</span>'
+                    : '<span class="text-[10px] font-bold bg-green-100 text-green-600 px-2 py-0.5 rounded-full">Aman</span>';
+
+                return `
+                <div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                    <div class="flex items-start justify-between mb-2">
+                        <div>
+                            <span class="font-bold text-slate-800 dark:text-white text-sm">${UIController.sanitize(cat)}</span>
+                            <div class="mt-0.5">${statusBadge}</div>
+                        </div>
+                        <div class="flex gap-2 ml-2">
+                            <button data-budget-edit="${UIController.sanitize(cat)}" class="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            <button data-budget-delete="${UIController.sanitize(cat)}" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
+                                <i class="fas fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2 mb-2">
+                        <div class="h-2 rounded-full ${barColor} transition-all" style="width:${pct}%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-500">
+                        <span>Terpakai: <span class="font-bold ${isOver ? 'text-red-600' : 'text-slate-700 dark:text-slate-300'}">${UIController.formatCurrency(spent)}</span></span>
+                        <span>Sisa: <span class="font-bold ${remaining < 0 ? 'text-red-600' : 'text-green-600'}">${UIController.formatCurrency(remaining)}</span> / ${UIController.formatCurrency(budget)}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // Categories with no budget
+        const expenseCats = Array.from(new Set(
+            TransactionManager.transactions
+                .filter(t => t.type === 'expense' && t.date.startsWith(currentMonth))
+                .map(t => t.category)
+        )).filter(c => !budgets[c]);
+
+        const noBudgetEl = document.getElementById('no-budget-cats-list');
+        const noBudgetCard = document.getElementById('no-budget-cats-card');
+        if (expenseCats.length === 0) {
+            noBudgetCard.classList.add('hidden');
+        } else {
+            noBudgetCard.classList.remove('hidden');
+            noBudgetEl.innerHTML = expenseCats.map(c =>
+                `<button data-quick-budget="${UIController.sanitize(c)}" 
+                    class="px-3 py-1.5 bg-slate-100 hover:bg-amber-100 hover:text-amber-700 text-slate-600 text-xs font-bold rounded-full transition-colors">
+                    <i class="fas fa-plus text-[10px] mr-1"></i>${UIController.sanitize(c)}
+                </button>`
+            ).join('');
+        }
+    },
+
+    setupListeners() {
+        document.getElementById('budget-page-save').addEventListener('click', () => {
+            const cat = document.getElementById('budget-page-cat').value;
+            const amount = parseFloat(document.getElementById('budget-page-amount').value);
+            if (!cat || isNaN(amount) || amount <= 0) {
+                alert('Masukkan kategori dan nominal yang valid.');
+                return;
+            }
+            TransactionManager.setBudget(cat, amount);
+            this.resetForm();
+            this.render();
+            UIController.updateUI();
+        });
+
+        document.getElementById('budget-page-cancel').addEventListener('click', () => {
+            this.resetForm();
+        });
+
+        document.getElementById('budget-page-list').addEventListener('click', (e) => {
+            const editBtn = e.target.closest('[data-budget-edit]');
+            const deleteBtn = e.target.closest('[data-budget-delete]');
+            if (editBtn) {
+                const cat = editBtn.dataset.budgetEdit;
+                document.getElementById('budget-page-cat').value = cat;
+                document.getElementById('budget-page-amount').value = TransactionManager.budgets[cat] || '';
+                document.getElementById('budget-form-title').textContent = 'Edit Anggaran';
+                document.getElementById('budget-page-save-label').textContent = 'Update Anggaran';
+                document.getElementById('budget-page-cancel').classList.remove('hidden');
+                this.editingCat = cat;
+            }
+            if (deleteBtn) {
+                const cat = deleteBtn.dataset.budgetDelete;
+                if (confirm(`Hapus anggaran untuk kategori "${cat}"?`)) {
+                    delete TransactionManager.budgets[cat];
+                    StorageManager.saveBudgets(TransactionManager.budgets);
+                    this.render();
+                    UIController.updateUI();
+                }
+            }
+        });
+
+        document.getElementById('no-budget-cats-list').addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-quick-budget]');
+            if (btn) {
+                document.getElementById('budget-page-cat').value = btn.dataset.quickBudget;
+                document.getElementById('budget-page-amount').focus();
+            }
+        });
+    },
+
+    resetForm() {
+        document.getElementById('budget-page-amount').value = '';
+        document.getElementById('budget-form-title').textContent = 'Tambah Anggaran';
+        document.getElementById('budget-page-save-label').textContent = 'Simpan Anggaran';
+        document.getElementById('budget-page-cancel').classList.add('hidden');
+        this.editingCat = null;
+    }
+};
+
+// ===== HALAMAN LAPORAN =====
+const ReportManager = {
+    currentYear: new Date().getFullYear(),
+    currentMonth: new Date().getMonth(), // 0-indexed
+    repCatChart: null,
+    repTrendChart: null,
+    repMonthlyChart: null,
+
+    getMonthStr() {
+        return `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, '0')}`;
+    },
+
+    render() {
+        const monthStr = this.getMonthStr();
+        const monthName = new Date(this.currentYear, this.currentMonth, 1)
+            .toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+        document.getElementById('report-month-label').textContent = monthName;
+
+        const allTx = TransactionManager.transactions;
+        const monthTx = allTx.filter(t => t.date.startsWith(monthStr));
+
+        // Previous month
+        let prevYear = this.currentYear, prevMonth = this.currentMonth - 1;
+        if (prevMonth < 0) { prevMonth = 11; prevYear--; }
+        const prevMonthStr = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}`;
+        const prevTx = allTx.filter(t => t.date.startsWith(prevMonthStr));
+
+        const summary = TransactionManager.getSummary(monthTx);
+        const prevSummary = TransactionManager.getSummary(prevTx);
+
+        document.getElementById('rep-income').textContent = UIController.formatCurrency(summary.income);
+        document.getElementById('rep-expense').textContent = UIController.formatCurrency(summary.expense);
+        document.getElementById('rep-balance').textContent = UIController.formatCurrency(summary.balance);
+        document.getElementById('rep-balance').className = `text-xl font-bold ${summary.balance >= 0 ? 'text-blue-600' : 'text-red-600'}`;
+
+        // vs last month (expense comparison)
+        const vsEl = document.getElementById('rep-vs-last');
+        if (prevSummary.expense === 0) {
+            vsEl.textContent = '-';
+            vsEl.className = 'text-xl font-bold text-slate-400';
+        } else {
+            const diff = summary.expense - prevSummary.expense;
+            const pct = Math.abs(Math.round(diff / prevSummary.expense * 100));
+            vsEl.textContent = (diff > 0 ? '+' : '-') + pct + '% pengeluaran';
+            vsEl.className = `text-lg font-bold ${diff > 0 ? 'text-red-500' : 'text-green-500'}`;
+        }
+
+        this.renderCatChart(monthTx);
+        this.renderTrendChart(monthTx, monthStr);
+        this.renderMonthlyChart(allTx);
+        this.renderCatTable(monthTx);
+    },
+
+    renderCatChart(monthTx) {
+        const canvas = document.getElementById('rep-cat-chart');
+        const ctx = canvas.getContext('2d');
+        const noDataEl = document.getElementById('rep-no-expense');
+        const expenses = monthTx.filter(t => t.type === 'expense');
+
+        if (this.repCatChart) this.repCatChart.destroy();
+
+        if (expenses.length === 0) {
+            noDataEl.classList.remove('hidden');
+            canvas.classList.add('hidden');
+            return;
+        }
+        noDataEl.classList.add('hidden');
+        canvas.classList.remove('hidden');
+
+        const catMap = expenses.reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) + t.amount; return acc; }, {});
+        const labels = Object.keys(catMap);
+        const colors = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#06b6d4','#14b8a6','#f43f5e'];
+
+        this.repCatChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    data: labels.map(l => catMap[l]),
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderWidth: 2,
+                    borderColor: UIController.isDark ? '#1e293b' : '#fff'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'right', labels: { color: UIController.isDark ? '#cbd5e1' : '#64748b', font: { size: 11 }, boxWidth: 12 } } },
+                cutout: '60%'
+            }
+        });
+    },
+
+    renderTrendChart(monthTx, monthStr) {
+        const canvas = document.getElementById('rep-trend-chart');
+        const ctx = canvas.getContext('2d');
+        if (this.repTrendChart) this.repTrendChart.destroy();
+
+        // Build daily income/expense for the month
+        const year = parseInt(monthStr.split('-')[0]);
+        const month = parseInt(monthStr.split('-')[1]) - 1;
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const days = Array.from({ length: daysInMonth }, (_, i) => {
+            const d = String(i + 1).padStart(2, '0');
+            return `${monthStr}-${d}`;
+        });
+
+        const incomeData = days.map(d => monthTx.filter(t => t.date === d && t.type === 'income').reduce((s, t) => s + t.amount, 0));
+        const expenseData = days.map(d => monthTx.filter(t => t.date === d && t.type === 'expense').reduce((s, t) => s + t.amount, 0));
+        const labels = days.map(d => parseInt(d.split('-')[2]));
+
+        this.repTrendChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Pemasukan', data: incomeData, backgroundColor: 'rgba(34,197,94,0.7)', borderRadius: 3 },
+                    { label: 'Pengeluaran', data: expenseData, backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 3 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: UIController.isDark ? '#cbd5e1' : '#64748b', font: { size: 11 }, boxWidth: 12 } } },
+                scales: {
+                    x: { ticks: { color: UIController.isDark ? '#94a3b8' : '#64748b', font: { size: 10 } }, grid: { display: false } },
+                    y: { ticks: { color: UIController.isDark ? '#94a3b8' : '#64748b', font: { size: 10 } }, grid: { color: UIController.isDark ? '#334155' : '#f1f5f9' }, beginAtZero: true }
+                }
+            }
+        });
+    },
+
+    renderMonthlyChart(allTx) {
+        const canvas = document.getElementById('rep-monthly-chart');
+        const ctx = canvas.getContext('2d');
+        if (this.repMonthlyChart) this.repMonthlyChart.destroy();
+
+        // Last 6 months from currently viewed month
+        const months = [];
+        for (let i = 5; i >= 0; i--) {
+            let m = this.currentMonth - i;
+            let y = this.currentYear;
+            while (m < 0) { m += 12; y--; }
+            const ms = `${y}-${String(m + 1).padStart(2, '0')}`;
+            const label = new Date(y, m, 1).toLocaleString('id-ID', { month: 'short', year: '2-digit' });
+            months.push({ ms, label });
+        }
+
+        const incomeData = months.map(({ ms }) => allTx.filter(t => t.date.startsWith(ms) && t.type === 'income').reduce((s, t) => s + t.amount, 0));
+        const expenseData = months.map(({ ms }) => allTx.filter(t => t.date.startsWith(ms) && t.type === 'expense').reduce((s, t) => s + t.amount, 0));
+
+        this.repMonthlyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: months.map(m => m.label),
+                datasets: [
+                    { label: 'Pemasukan', data: incomeData, backgroundColor: 'rgba(34,197,94,0.8)', borderRadius: 5 },
+                    { label: 'Pengeluaran', data: expenseData, backgroundColor: 'rgba(239,68,68,0.8)', borderRadius: 5 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: UIController.isDark ? '#cbd5e1' : '#64748b', font: { size: 11 } } } },
+                scales: {
+                    x: { ticks: { color: UIController.isDark ? '#94a3b8' : '#64748b' }, grid: { display: false } },
+                    y: { ticks: { color: UIController.isDark ? '#94a3b8' : '#64748b' }, grid: { color: UIController.isDark ? '#334155' : '#f1f5f9' }, beginAtZero: true }
+                }
+            }
+        });
+    },
+
+    renderCatTable(monthTx) {
+        const budgets = TransactionManager.budgets;
+        const cats = Array.from(new Set(monthTx.map(t => t.category))).sort();
+        const tbody = document.getElementById('rep-cat-table');
+
+        if (cats.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400 italic">Tidak ada transaksi bulan ini</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = cats.map(cat => {
+            const income = monthTx.filter(t => t.category === cat && t.type === 'income').reduce((s, t) => s + t.amount, 0);
+            const expense = monthTx.filter(t => t.category === cat && t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+            const budget = budgets[cat] || 0;
+            const pct = budget > 0 ? Math.round(expense / budget * 100) : null;
+            const pctDisplay = pct !== null
+                ? `<span class="font-bold ${pct >= 100 ? 'text-red-600' : pct >= 80 ? 'text-amber-600' : 'text-green-600'}">${pct}%</span>`
+                : '<span class="text-slate-400">-</span>';
+
+            return `<tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                <td class="px-6 py-3 font-semibold text-slate-700 dark:text-slate-300">${UIController.sanitize(cat)}</td>
+                <td class="px-6 py-3 text-right text-green-600 font-medium">${income > 0 ? UIController.formatCurrency(income) : '-'}</td>
+                <td class="px-6 py-3 text-right text-red-600 font-medium">${expense > 0 ? UIController.formatCurrency(expense) : '-'}</td>
+                <td class="px-6 py-3 text-right text-slate-500">${budget > 0 ? UIController.formatCurrency(budget) : '-'}</td>
+                <td class="px-6 py-3 text-right">${pctDisplay}</td>
+            </tr>`;
+        }).join('');
+    },
+
+    setupListeners() {
+        document.getElementById('report-prev-month').addEventListener('click', () => {
+            this.currentMonth--;
+            if (this.currentMonth < 0) { this.currentMonth = 11; this.currentYear--; }
+            this.render();
+        });
+        document.getElementById('report-next-month').addEventListener('click', () => {
+            const now = new Date();
+            if (this.currentYear === now.getFullYear() && this.currentMonth === now.getMonth()) return;
+            this.currentMonth++;
+            if (this.currentMonth > 11) { this.currentMonth = 0; this.currentYear++; }
+            this.render();
+        });
+        document.getElementById('rep-export-excel').addEventListener('click', () => {
+            const monthStr = this.getMonthStr();
+            const data = TransactionManager.transactions.filter(t => t.date.startsWith(monthStr));
+            UIController.exportExcel(data);
+        });
+        document.getElementById('rep-export-pdf').addEventListener('click', () => {
+            const monthStr = this.getMonthStr();
+            const data = TransactionManager.transactions.filter(t => t.date.startsWith(monthStr));
+            UIController.exportPDF(data);
+        });
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     UIController.init();
+    BudgetPageManager.setupListeners();
+    ReportManager.setupListeners();
+
+    // Page navigation
+    document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tab = btn.dataset.tab;
+            if (PageManager.currentPage === tab) {
+                PageManager.showPage('main');
+            } else {
+                PageManager.showPage(tab);
+            }
+        });
+    });
+
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').then(() => console.log('FinTrack SW Registered'));
 });

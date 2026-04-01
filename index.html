@@ -50,8 +50,10 @@
                 <i class="fas fa-wallet"></i> FinTrack
             </h1>
             <div class="flex items-center gap-4 text-sm font-medium">
-                <a href="#dashboard" class="hover:text-blue-100 hidden sm:block">Dashboard</a>
-                <a href="#transaksi" class="hover:text-blue-100 hidden sm:block">Transaksi</a>
+                <a href="#dashboard" class="hover:text-blue-100 hidden sm:block nav-link" data-section="dashboard">Dashboard</a>
+                <a href="#transaksi" class="hover:text-blue-100 hidden sm:block nav-link" data-section="transaksi">Transaksi</a>
+                <button id="nav-anggaran" class="hover:text-blue-100 hidden sm:block nav-tab-btn font-medium" data-tab="anggaran">Anggaran</button>
+                <button id="nav-laporan" class="hover:text-blue-100 hidden sm:block nav-tab-btn font-medium" data-tab="laporan">Laporan</button>
                 
                 <!-- Dark Mode Toggle -->
                 <button id="dark-mode-toggle" class="p-2 hover:bg-blue-700 rounded-full transition-colors" title="Toggle Tema">
@@ -363,6 +365,199 @@
             <div class="flex gap-3 mt-6">
                 <button id="budget-cancel" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all">Batal</button>
                 <button id="budget-save" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== HALAMAN ANGGARAN ===== -->
+    <div id="page-anggaran" class="hidden container mx-auto p-4 md:p-6 lg:p-8 space-y-6">
+        <div class="flex items-center justify-between">
+            <h2 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+                <i class="fas fa-bullseye text-amber-500"></i> Manajemen Anggaran
+            </h2>
+            <span class="text-sm text-slate-500" id="budget-month-label"></span>
+        </div>
+
+        <!-- Budget Overview Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="card p-4 border-l-4 border-amber-400">
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total Anggaran</p>
+                <p id="bov-total-budget" class="text-xl font-bold text-amber-600">Rp 0</p>
+            </div>
+            <div class="card p-4 border-l-4 border-red-400">
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total Terpakai</p>
+                <p id="bov-total-spent" class="text-xl font-bold text-red-600">Rp 0</p>
+            </div>
+            <div class="card p-4 border-l-4 border-green-400">
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Sisa Anggaran</p>
+                <p id="bov-total-remaining" class="text-xl font-bold text-green-600">Rp 0</p>
+            </div>
+            <div class="card p-4 border-l-4 border-blue-400">
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">% Terpakai</p>
+                <p id="bov-percent-used" class="text-xl font-bold text-blue-600">0%</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left: Add/Edit Budget Form -->
+            <div class="lg:col-span-4">
+                <div class="card p-6 sticky top-24">
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                        <i class="fas fa-plus-circle text-amber-500"></i>
+                        <span id="budget-form-title">Tambah Anggaran</span>
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Kategori</label>
+                            <select id="budget-page-cat" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none dark:bg-slate-700 dark:border-slate-600">
+                                <option value="Gaji">Gaji</option>
+                                <option value="Makanan">Makanan</option>
+                                <option value="Transportasi">Transportasi</option>
+                                <option value="Belanja">Belanja</option>
+                                <option value="Kesehatan">Kesehatan</option>
+                                <option value="Pendidikan">Pendidikan</option>
+                                <option value="Hiburan">Hiburan</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Batas Anggaran Bulanan (Rp)</label>
+                            <input type="number" id="budget-page-amount" min="1" placeholder="Contoh: 1500000"
+                                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none dark:bg-slate-700 dark:border-slate-600">
+                        </div>
+                        <button id="budget-page-save" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-amber-100 flex items-center justify-center gap-2">
+                            <i class="fas fa-save"></i> <span id="budget-page-save-label">Simpan Anggaran</span>
+                        </button>
+                        <button id="budget-page-cancel" class="hidden w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-xl transition-colors">
+                            Batal Edit
+                        </button>
+                    </div>
+                    <div class="mt-6 p-4 bg-amber-50 dark:bg-slate-700 rounded-xl text-xs text-amber-700 dark:text-amber-300">
+                        <p class="font-bold mb-1"><i class="fas fa-lightbulb mr-1"></i> Tips Anggaran</p>
+                        <p>Aturan 50/30/20: 50% kebutuhan, 30% keinginan, 20% tabungan.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Budget List -->
+            <div class="lg:col-span-8 space-y-4">
+                <div class="card overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                        <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-list-check text-amber-500"></i> Daftar Anggaran Bulan Ini
+                        </h3>
+                        <span id="budget-count-badge" class="text-xs bg-amber-100 text-amber-700 font-bold px-2.5 py-1 rounded-full">0 kategori</span>
+                    </div>
+                    <div id="budget-page-list" class="divide-y divide-slate-100 dark:divide-slate-700">
+                        <div class="p-10 text-center text-slate-400 italic text-sm">Belum ada anggaran. Tambahkan di panel kiri.</div>
+                    </div>
+                </div>
+                <div class="card p-5" id="no-budget-cats-card">
+                    <h3 class="font-bold text-slate-700 dark:text-slate-300 text-sm mb-3 flex items-center gap-2">
+                        <i class="fas fa-tags text-slate-400"></i> Kategori Pengeluaran Tanpa Anggaran
+                    </h3>
+                    <div id="no-budget-cats-list" class="flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== HALAMAN LAPORAN ===== -->
+    <div id="page-laporan" class="hidden container mx-auto p-4 md:p-6 lg:p-8 space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h2 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+                <i class="fas fa-chart-bar text-blue-500"></i> Laporan Keuangan
+            </h2>
+            <div class="flex items-center gap-2">
+                <button id="report-prev-month" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors dark:bg-slate-700">
+                    <i class="fas fa-chevron-left text-sm"></i>
+                </button>
+                <span id="report-month-label" class="text-sm font-bold text-slate-700 dark:text-slate-300 min-w-[140px] text-center"></span>
+                <button id="report-next-month" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors dark:bg-slate-700">
+                    <i class="fas fa-chevron-right text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Monthly Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="card p-4 border-l-4 border-green-500">
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Pemasukan</p>
+                <p id="rep-income" class="text-xl font-bold text-green-600">Rp 0</p>
+            </div>
+            <div class="card p-4 border-l-4 border-red-500">
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Pengeluaran</p>
+                <p id="rep-expense" class="text-xl font-bold text-red-600">Rp 0</p>
+            </div>
+            <div class="card p-4 border-l-4 border-blue-500">
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Selisih</p>
+                <p id="rep-balance" class="text-xl font-bold text-blue-600">Rp 0</p>
+            </div>
+            <div class="card p-4 border-l-4 border-purple-500">
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">vs Bulan Lalu</p>
+                <p id="rep-vs-last" class="text-xl font-bold text-purple-600">-</p>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="card p-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2 text-sm">
+                    <i class="fas fa-chart-pie text-blue-500"></i> Pengeluaran per Kategori
+                </h3>
+                <div class="h-64 relative">
+                    <canvas id="rep-cat-chart"></canvas>
+                    <div id="rep-no-expense" class="absolute inset-0 flex items-center justify-center text-slate-400 italic text-sm hidden">Tidak ada pengeluaran bulan ini</div>
+                </div>
+            </div>
+            <div class="card p-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2 text-sm">
+                    <i class="fas fa-chart-line text-green-500"></i> Tren Harian Bulan Ini
+                </h3>
+                <div class="h-64">
+                    <canvas id="rep-trend-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6 Month Comparison -->
+        <div class="card p-6">
+            <h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2 text-sm">
+                <i class="fas fa-arrows-left-right text-purple-500"></i> Perbandingan 6 Bulan Terakhir
+            </h3>
+            <div class="h-64">
+                <canvas id="rep-monthly-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Category Breakdown Table -->
+        <div class="card overflow-hidden">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-sm">
+                    <i class="fas fa-table text-slate-500"></i> Rincian per Kategori
+                </h3>
+                <div class="flex gap-2">
+                    <button id="rep-export-excel" class="px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg text-xs font-bold transition-colors flex items-center gap-1">
+                        <i class="fas fa-file-excel"></i> Excel
+                    </button>
+                    <button id="rep-export-pdf" class="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-bold transition-colors flex items-center gap-1">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 dark:bg-slate-800 text-slate-500 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100 dark:border-slate-700">
+                        <tr>
+                            <th class="px-6 py-3">Kategori</th>
+                            <th class="px-6 py-3 text-right">Pemasukan</th>
+                            <th class="px-6 py-3 text-right">Pengeluaran</th>
+                            <th class="px-6 py-3 text-right">Anggaran</th>
+                            <th class="px-6 py-3 text-right">% Anggaran</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rep-cat-table" class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
+                </table>
             </div>
         </div>
     </div>
