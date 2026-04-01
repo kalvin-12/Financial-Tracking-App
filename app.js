@@ -1235,4 +1235,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').then(() => console.log('FinTrack SW Registered'));
+
+    // GSAP ScrollSmoother Initialization
+    gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
+    let smoother = ScrollSmoother.create({
+        smooth: 2,
+        effects: true
+    });
 });

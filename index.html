@@ -44,7 +44,9 @@
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
     </div>
 
-    <nav class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-40 transition-colors">
+    <div id="smooth-wrapper">
+        <div id="smooth-content">
+            <nav class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-40 transition-colors">
         <div class="container mx-auto flex justify-between items-center px-4">
             <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
                 <i class="fas fa-wallet"></i> FinTrack
@@ -567,18 +569,23 @@
         <i class="fas fa-arrow-up"></i>
     </button>
 
-    <footer class="bg-slate-900 text-slate-400 py-10 mt-12 text-center text-sm">
-        <div class="container mx-auto px-4">
-            <div class="flex justify-center gap-6 mb-4">
-                <i class="fab fa-github hover:text-white cursor-pointer transition-colors"></i>
-                <i class="fab fa-twitter hover:text-white cursor-pointer transition-colors"></i>
-                <i class="fab fa-linkedin hover:text-white cursor-pointer transition-colors"></i>
-            </div>
-            <p>&copy; 2024 FinTrack. Dibuat dengan <i class="fas fa-heart text-red-500"></i> untuk manajemen keuangan Anda.</p>
+            <footer class="bg-slate-900 text-slate-400 py-10 mt-12 text-center text-sm">
+                <div class="container mx-auto px-4">
+                    <div class="flex justify-center gap-6 mb-4">
+                        <i class="fab fa-github hover:text-white cursor-pointer transition-colors"></i>
+                        <i class="fab fa-twitter hover:text-white cursor-pointer transition-colors"></i>
+                        <i class="fab fa-linkedin hover:text-white cursor-pointer transition-colors"></i>
+                    </div>
+                    <p>&copy; 2024 FinTrack. Dibuat dengan <i class="fas fa-heart text-red-500"></i> untuk manajemen keuangan Anda.</p>
+                </div>
+            </footer>
         </div>
-    </footer>
+    </div>
 
     <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://assets.codepen.io/16327/ScrollSmoother.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
